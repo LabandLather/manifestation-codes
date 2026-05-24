@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Manifestation Codebook</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700&family=DM+Mono:wght@300;400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --cream: #F9F6F0;
+    --ink: #1A1A2E;
+    --medical: #1A4FC4;
+    --leven: #3D7A5E;
+    --gold: #C9A84C;
+    --rule: #D8D0C4;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--cream); color: var(--ink); min-height: 100vh; }
+
+  #home { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 40px 20px; background: var(--ink); }
+  .home-title { font-family: 'Playfair Display', serif; font-size: clamp(2rem,5vw,4rem); color: var(--cream); letter-spacing: 0.04em; text-align: center; margin-bottom: 6px; }
+  .home-subtitle { font-family: 'DM Mono', monospace; font-size: 0.75rem; color: var(--gold); letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 40px; }
+
+  .app-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; width: 100%; max-width: 560px; margin-bottom: 20px; }
+  .app-tile { border: none; border-radius: 16px; padding: 30px 24px; cursor: pointer; transition: transform 0.18s; text-align: left; position: relative; overflow: hidden; }
+  .app-tile:active { transform: scale(0.97); }
+  .tile-medical { background: var(--medical); }
+  .tile-leven { background: var(--leven); }
+  .tile-icon { font-size: 2rem; margin-bottom: 12px; display: block; }
+  .tile-label { font-family: 'Playfair Display', serif; font-size: 1.4rem; color: white; display: block; margin-bottom: 4px; }
+  .tile-desc { font-size: 0.75rem; color: rgba(255,255,255,0.6); font-family: 'DM Mono', monospace; }
+  .tile-corner { position: absolute; bottom: -10px; right: -10px; width: 70px; height: 70px; border-radius: 50%; background: rgba(255,255,255,0.07); }
+
+  .home-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; max-width: 560px; margin-bottom: 28px; }
+  .home-btn { border: 1.5px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.85); border-radius: 10px; padding: 9px 16px; font-size: 0.8rem; cursor: pointer; font-family: 'DM Sans', sans-serif; display: flex; align-items: center; gap: 7px; }
+  .home-btn:active { background: rgba(255,255,255,0.15); }
+  .version-tag { font-family: 'DM Mono', monospace; font-size: 0.68rem; color: rgba(255,255,255,0.2); letter-spacing: 0.12em; }
+  #load-file-input { display: none; }
+
+  #table-screen { display: none; flex-direction: column; min-height: 100vh; }
+  .top-bar { display: flex; align-items: center; gap: 8px; padding: 10px 14px; background: white; border-bottom: 1px solid var(--rule); position: sticky; top: 0; z-index: 100; flex-wrap: wrap; }
+  .back-btn { background: none; border: 1.5px solid var(--rule); border-radius: 8px; padding: 5px 11px; font-size: 0.8rem; cursor: pointer; font-family: 'DM Sans', sans-serif; color: var(--ink); white-space: nowrap; }
+  .screen-title { font-family: 'Playfair Display', serif; font-size: 1.3rem; width: 100%; order: -1; padding-bottom: 6px; }
+  .title-medical { color: var(--medical); }
+  .title-leven { color: var(--leven); }
+  .top-actions { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+  .btn { border: none; border-radius: 8px; padding: 6px 12px; font-size: 0.77rem; cursor: pointer; font-family: 'DM Sans', sans-serif; font-weight: 500; display: flex; align-items: center; gap: 4px; white-space: nowrap; }
+  .btn:active { opacity: 0.75; }
+  .btn-sort   { background: var(--ink); color: white; }
+  .btn-print  { background: #555; color: white; }
+  .btn-share  { background: #34A853; color: white; }
+  .btn-copy   { background: #EA4335; color: white; }
+  .btn-trans  { background: #F4A234; color: white; }
+  .btn-lock   { background: #7B5EA7; color: white; }
+  .btn-select { background: #888; color: white; }
+  .btn-sel-all { background: white; color: var(--ink); border: 1.5px solid var(--rule); }
+
+  .table-wrapper { padding: 14px 12px 80px; }
+  .col-headers { display: flex; align-items: center; gap: 4px; padding: 8px 0 4px; border-bottom: 2px solid; margin-bottom: 2px; }
+  .col-headers.medical { border-color: var(--medical); }
+  .col-headers.leven   { border-color: var(--leven); }
+  .col-h { font-family: 'DM Mono', monospace; font-size: 0.68rem; letter-spacing: 0.1em; text-transform: uppercase; }
+  .col-h.medical { color: var(--medical); }
+  .col-h.leven   { color: var(--leven); }
+  .col-h-check { width: 32px; flex-shrink: 0; }
+  .col-h-num   { min-width: 20px; }
+  .col-h-a     { flex: 2; padding-left: 4px; }
+  .col-h-c     { flex: 1; text-align: center; }
+
+  .row-item { display: flex; align-items: center; border-bottom: 1px solid var(--rule); padding: 3px 0; gap: 4px; }
+  .row-check { width: 32px; flex-shrink: 0; display: none; justify-content: center; }
+  .row-check input[type=checkbox] { width: 18px; height: 18px; cursor: pointer; accent-color: var(--medical); }
+  .select-mode .row-check { display: flex; }
+  .row-num { font-family: 'DM Mono', monospace; font-size: 0.65rem; color: #ccc; min-width: 20px; text-align: right; flex-shrink: 0; }
+  .row-aandoening { flex: 2; border: none; background: transparent; font-family: 'DM Sans', sans-serif; font-size: 0.88rem; color: var(--ink); padding: 7px 4px; outline: none; min-width: 0; }
+  .row-code { flex: 1; border: none; background: transparent; font-family: 'DM Mono', monospace; font-size: 0.85rem; color: var(--ink); padding: 7px 4px; outline: none; text-align: center; min-width: 0; }
+  .row-aandoening:disabled, .row-code:disabled { color: var(--ink); }
+  .del-btn { background: none; border: none; cursor: pointer; color: #ddd; font-size: 0.95rem; padding: 4px 5px; flex-shrink: 0; }
+  .del-btn:active { color: #c0392b; }
+
+  .select-bar { display: none; background: var(--ink); color: white; padding: 10px 16px; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .select-bar.visible { display: flex; }
+  .select-bar span { font-size: 0.82rem; flex: 1; }
+
+  .add-row-bar { padding: 14px 12px; display: flex; gap: 10px; }
+  .add-row-bar button { border: 1.5px dashed var(--rule); background: transparent; border-radius: 8px; padding: 9px 16px; font-size: 0.8rem; cursor: pointer; font-family: 'DM Sans', sans-serif; color: #888; flex: 1; }
+  .add-row-bar button:active { background: var(--cream); }
+
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 999; align-items: center; justify-content: center; padding: 20px; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: white; border-radius: 16px; padding: 26px; width: 100%; max-width: 420px; box-shadow: 0 24px 60px rgba(0,0,0,0.2); }
+  .modal h2 { font-family: 'Playfair Display', serif; font-size: 1.25rem; margin-bottom: 10px; }
+  .modal p { font-size: 0.82rem; color: #444; margin-bottom: 14px; line-height: 1.6; }
+  .modal .steps { font-size: 0.8rem; color: #555; line-height: 2.1; margin-bottom: 16px; background: var(--cream); border-radius: 10px; padding: 12px 14px; }
+  .modal .steps b { color: var(--ink); }
+  .modal-btns { display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; }
+  .btn-cancel  { background: var(--cream); color: var(--ink); border: 1.5px solid var(--rule); }
+  .btn-do-copy  { background: #EA4335; color: white; border: none; font-size: 0.88rem; padding: 9px 16px; border-radius: 8px; cursor: pointer; font-family: 'DM Sans', sans-serif; font-weight: 500; }
+  .btn-do-trans { background: #F4A234; color: white; border: none; font-size: 0.88rem; padding: 9px 16px; border-radius: 8px; cursor: pointer; font-family: 'DM Sans', sans-serif; font-weight: 500; }
+  .btn-do-lock  { background: #7B5EA7; color: white; border: none; font-size: 0.88rem; padding: 9px 16px; border-radius: 8px; cursor: pointer; font-family: 'DM Sans', sans-serif; font-weight: 500; }
+
+  .pin-input { width: 100%; border: 1.5px solid var(--rule); border-radius: 8px; padding: 10px 14px; font-size: 1.2rem; font-family: 'DM Mono', monospace; letter-spacing: 0.3em; text-align: center; margin-bottom: 14px; outline: none; }
+  .pin-input:focus { border-color: #7B5EA7; }
+  .pin-error { color: #c0392b; font-size: 0.8rem; margin-bottom: 10px; display: none; }
+  .lock-badge { background: #7B5EA7; color: white; font-size: 0.7rem; padding: 2px 8px; border-radius: 20px; font-family: 'DM Mono', monospace; }
+
+  .lang-select { width: 100%; border: 1.5px solid var(--rule); border-radius: 8px; padding: 10px 14px; font-size: 0.9rem; font-family: 'DM Sans', sans-serif; margin-bottom: 14px; outline: none; background: white; }
+  .trans-status { font-size: 0.78rem; color: #888; margin-bottom: 10px; min-height: 18px; }
+
+  .toast { position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(80px); background: var(--ink); color: white; padding: 10px 20px; border-radius: 40px; font-size: 0.82rem; font-family: 'DM Sans', sans-serif; transition: transform 0.3s; z-index: 9999; white-space: nowrap; max-width: 90vw; text-align: center; }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  @media print {
+    #home { display: none !important; }
+    .top-bar { display: none !important; }
+    .add-row-bar { display: none !important; }
+    .select-bar { display: none !important; }
+    #table-screen { display: block !important; }
+    .del-btn { display: none !important; }
+    .row-check { display: none !important; }
+    .row-num { display: none !important; }
+    .row-item.not-selected { display: none !important; }
+    .col-h-check { display: none !important; }
+    .row-aandoening, .row-code { font-size: 10pt; }
+    .row-item { page-break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+
+<div id="home">
+  <div class="home-title">Manifestation Codebook</div>
+  <div class="home-subtitle" id="h-subtitle">Personal Register</div>
+  <div class="app-grid">
+    <button class="app-tile tile-medical" onclick="openSection('medical')">
+      <span class="tile-icon">🏥</span>
+      <span class="tile-label" id="h-tile-medical">Medical</span>
+      <span class="tile-desc" id="h-tile-medical-desc">Conditions &amp; codes</span>
+      <div class="tile-corner"></div>
+    </button>
+    <button class="app-tile tile-leven" onclick="openSection('leven')">
+      <span class="tile-icon">🌿</span>
+      <span class="tile-label" id="h-tile-life">Life</span>
+      <span class="tile-desc" id="h-tile-life-desc">Improvements &amp; codes</span>
+      <div class="tile-corner"></div>
+    </button>
+  </div>
+  <div class="home-actions">
+    <button class="home-btn" onclick="triggerLoad()">📂 <span id="h-btn-load">Load</span></button>
+    <button class="home-btn" onclick="shareData('all')">📤 <span id="h-btn-save">Save / Share</span></button>
+    <button class="home-btn" onclick="openCopyModal('all')">📧 <span id="h-btn-mail">Email Backup</span></button>
+    <button class="home-btn" onclick="openHelp()" style="border-color:rgba(201,168,76,0.5);color:var(--gold);">❓ Help</button>
+  </div>
+  <div class="version-tag">v6.1</div>
+  <input type="file" id="load-file-input" accept=".json" onchange="loadFile(event)">
+</div>
+
+<div id="table-screen">
+  <div class="top-bar">
+    <button class="back-btn" id="t-back" onclick="goHome()">← Back</button>
+    <div id="screen-title" class="screen-title"></div>
+    <span id="lock-badge" class="lock-badge" style="display:none">🔒 Locked</span>
+    <div class="top-actions">
+      <button class="btn btn-sort"   id="t-sort"   onclick="sortTable()">↑↓ A–Z</button>
+      <button class="btn btn-trans"  id="t-trans"  onclick="openTransModal()">🌍 Translate</button>
+      <button class="btn btn-select" id="t-select" onclick="toggleSelectMode()">☑ Select</button>
+      <button class="btn btn-print"  id="t-print"  onclick="printAll()">🖨 Print</button>
+      <button class="btn btn-share"  id="t-save"   onclick="shareData('section')">📤 Save</button>
+      <button class="btn btn-copy"   id="t-mail"   onclick="openCopyModal('section')">📧 Mail</button>
+      <button class="btn btn-lock"   id="btn-lock" onclick="openLockModal()">🔒</button>
+    </div>
+  </div>
+
+  <div class="select-bar" id="select-bar">
+    <button class="btn btn-sel-all" id="t-sel-all" onclick="selectAll()">☑ All</button>
+    <span id="sel-count">0 selected</span>
+    <button class="btn btn-print" id="t-sel-print" onclick="printSelected()">🖨 Print selection</button>
+    <button class="btn btn-share" id="t-sel-save"  onclick="shareSelected()">📤 Save selection</button>
+    <button class="btn btn-select" id="t-sel-cancel" onclick="toggleSelectMode()">✕ Cancel</button>
+  </div>
+
+  <div class="table-wrapper">
+    <div class="col-headers" id="col-headers">
+      <div class="col-h col-h-check"></div>
+      <div class="col-h col-h-num"></div>
+      <div class="col-h col-h-a" id="col-h-left">Condition</div>
+      <div class="col-h col-h-c" id="col-h-code">Code</div>
+      <div style="width:26px"></div>
+    </div>
+    <div id="rows-container"></div>
+  </div>
+  <div class="add-row-bar" id="add-row-bar">
+    <button id="t-add1" onclick="addRow()">+ Add row</button>
+    <button id="t-add5" onclick="addRows(5)">+ 5 rows</button>
+  </div>
+</div>
+
+<!-- MAIL MODAL -->
+<div class="modal-overlay" id="modal-copy">
+  <div class="modal">
+    <h2 id="mail-title">📧 Email</h2>
+    <div class="steps" id="mail-steps">
+      <b>Step 1</b> — Tap "Copy data" below<br>
+      <b>Step 2</b> — Open the Gmail app<br>
+      <b>Step 3</b> — Tap ✏️ Compose<br>
+      <b>Step 4</b> — To: your email address<br>
+      <b>Step 5</b> — Hold finger in text field → tap Paste<br>
+      <b>Step 6</b> — Send ✓
+    </div>
+    <div class="modal-btns">
+      <button class="btn btn-cancel" id="mail-cancel" onclick="closeModal('modal-copy')">Cancel</button>
+      <button class="btn-do-copy" id="mail-copy" onclick="doCopy()">📋 Copy data</button>
+    </div>
+  </div>
+</div>
+
+<!-- TRANSLATE MODAL -->
+<div class="modal-overlay" id="modal-trans">
+  <div class="modal">
+    <h2 id="trans-title">🌍 Translate</h2>
+    <p id="trans-desc">All conditions and interface labels will switch to the chosen language. Codes stay unchanged. You can always switch back.</p>
+    <select class="lang-select" id="lang-select">
+      <option value="en">English</option>
+      <option value="nl">Nederlands</option>
+      <option value="de">Deutsch</option>
+      <option value="fr">Français</option>
+      <option value="es">Español</option>
+      <option value="it">Italiano</option>
+      <option value="pt">Português</option>
+      <option value="pl">Polski</option>
+      <option value="tr">Türkçe</option>
+      <option value="ar">العربية</option>
+      <option value="zh">中文</option>
+      <option value="ja">日本語</option>
+    </select>
+    <div class="trans-status" id="trans-status"></div>
+    <div class="modal-btns">
+      <button class="btn btn-cancel" id="trans-cancel" onclick="closeModal('modal-trans')">Cancel</button>
+      <button class="btn-do-trans" id="trans-go" onclick="doTranslate()">🌍 Translate now</button>
+    </div>
+  </div>
+</div>
+
+<!-- LOCK MODAL -->
+<div class="modal-overlay" id="modal-lock">
+  <div class="modal">
+    <h2 id="lock-modal-title">🔒 Lock</h2>
+    <p id="lock-modal-desc">Set a 4-digit PIN. Nobody can edit or delete entries without the code.</p>
+    <input class="pin-input" type="password" inputmode="numeric" maxlength="4" id="pin-input" placeholder="••••" oninput="this.value=this.value.replace(/\D/g,'')">
+    <div class="pin-error" id="pin-error">Wrong PIN</div>
+    <div class="modal-btns">
+      <button class="btn btn-cancel" id="lock-cancel" onclick="closeModal('modal-lock')">Cancel</button>
+      <button class="btn-do-lock" id="btn-do-lock" onclick="doLock()">🔒 Lock</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- HELP MODAL -->
+<div class="modal-overlay" id="modal-help">
+  <div class="modal" style="max-height:85vh;overflow-y:auto;">
+    <h2>❓ How to use</h2>
+    <div class="steps" style="line-height:1.9">
+      <b>Getting started</b><br>
+      Tap Medical or Life to open a section and start entering conditions and codes.<br><br>
+      <b>Sort A–Z</b><br>
+      Tap ↑↓ A–Z to sort alphabetically. The code always stays linked to its condition.<br><br>
+      <b>Translate</b><br>
+      Tap 🌍 Translate to switch the entire app to another language. Conditions and all buttons translate. Always starts in English.<br><br>
+      <b>Select</b><br>
+      Tap ☑ Select, then tap rows to select them. Use ☑ All to select everything. Print or save your selection.<br><br>
+      <b>Print</b><br>
+      Tap 🖨 Print for a clean A4 printout. Buttons and row numbers are hidden.<br><br>
+      <b>Save / Share</b><br>
+      Tap 📤 Save to open the iPhone share sheet — choose Drive, AirDrop, Files, or any app.<br><br>
+      <b>Email</b><br>
+      Tap 📧 Mail to copy your data to the clipboard, then paste it into any email app.<br>
+      <i>💡 Tip: for a neat layout, print to PDF first and attach that to your email.</i><br><br>
+      <b>Load</b><br>
+      Use Load on the home screen to restore a previously saved .json file.
+    </div>
+    <div class="modal-btns">
+      <button class="btn-do-trans" onclick="closeModal('modal-help')" style="background:var(--ink)">Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const APP_VERSION = 'v6.1';
+  let currentSection = 'medical';
+  let copyContext = 'section';
+  let selectMode = false;
+  let isLocked = false;
+  let lockMode = 'set';
+  let originalTexts = {};
+  let currentLang = 'en';
+
+  // All UI strings per language
+  const UI = {
+    en: {
+      subtitle:'Personal Register', tileMedical:'Medical', tileMedicalDesc:'Conditions & codes',
+      tileLife:'Life', tileLifeDesc:'Improvements & codes',
+      btnLoad:'Load', btnSave:'Save / Share', btnMail:'Email Backup',
+      back:'← Back', sortBtn:'↑↓ A–Z', transBtn:'🌍 Translate', selectBtn:'☑ Select',
+      printBtn:'🖨 Print', saveBtn:'📤 Save', mailBtn:'📧 Mail', lockBadge:'🔒 Locked',
+      colCondition:'Condition', colImprovement:'Improvement', colCode:'Code',
+      addRow:'+ Add row', add5:'+ 5 rows',
+      selCount:'selected', selPrint:'🖨 Print selection', selSave:'📤 Save selection', selCancel:'✕ Cancel',
+      mailTitle:"📧 Email", mailCancel:'Cancel', mailCopy:'📋 Copy data',
+      transTitle:'🌍 Translate', transDesc:'All conditions and interface labels will switch to the chosen language. Codes stay unchanged.',
+      transCancel:'Cancel', transGo:'🌍 Translate now',
+      lockTitle:'🔒 Lock', lockDesc:'Set a 4-digit PIN. Nobody can edit or delete entries without the code.',
+      lockCancel:'Cancel', lockBtn:'🔒 Lock',
+      unlockTitle:'🔓 Unlock', unlockDesc:'Enter your PIN to unlock.',
+      unlockBtn:'🔓 Unlock', pinError:'Wrong PIN', pinError4:'Enter 4 digits',
+      toastSorted:'✓ Sorted A–Z — code stays linked',
+      toastLocked:'🔒 Locked', toastUnlocked:'🔓 Unlocked',
+      toastCopied:'✓ Copied! Open Gmail and paste.',
+      toastTranslated:'✓ Translated',
+    },
+    nl: {
+      subtitle:'Persoonlijk Register', tileMedical:'Medisch', tileMedicalDesc:'Aandoeningen & codes',
+      tileLife:'Leven', tileLifeDesc:'Verbeteringen & codes',
+      btnLoad:'Inladen', btnSave:'Opslaan / Delen', btnMail:'Back-up mailen',
+      back:'← Terug', sortBtn:'↑↓ A–Z', transBtn:'🌍 Vertaal', selectBtn:'☑ Selecteer',
+      printBtn:'🖨 Print', saveBtn:'📤 Opslaan', mailBtn:'📧 Mail', lockBadge:'🔒 Vergrendeld',
+      colCondition:'Aandoening', colImprovement:'Verbetering', colCode:'Code',
+      addRow:'+ Rij toevoegen', add5:'+ 5 rijen',
+      selCount:'geselecteerd', selPrint:'🖨 Print selectie', selSave:'📤 Sla op', selCancel:'✕ Annuleer',
+      mailTitle:"📧 Email", mailCancel:'Annuleren', mailCopy:'📋 Kopieer gegevens',
+      transTitle:'🌍 Vertalen', transDesc:'Alle aandoeningen en knoppen worden vertaald naar de gekozen taal. Codes blijven ongewijzigd.',
+      transCancel:'Annuleren', transGo:'🌍 Vertaal nu',
+      lockTitle:'🔒 Vergrendelen', lockDesc:'Stel een 4-cijferige pincode in. Niemand kan aanpassen zonder de code.',
+      lockCancel:'Annuleren', lockBtn:'🔒 Vergrendelen',
+      unlockTitle:'🔓 Ontgrendelen', unlockDesc:'Voer de pincode in om te ontgrendelen.',
+      unlockBtn:'🔓 Ontgrendelen', pinError:'Verkeerde pincode', pinError4:'Voer 4 cijfers in',
+      toastSorted:'✓ Gesorteerd op alfabet', toastLocked:'🔒 Vergrendeld', toastUnlocked:'🔓 Ontgrendeld',
+      toastCopied:'✓ Gekopieerd! Open Gmail en plak.', toastTranslated:'✓ Vertaald',
+    },
+    de: {
+      subtitle:'Persönliches Register', tileMedical:'Medizinisch', tileMedicalDesc:'Erkrankungen & Codes',
+      tileLife:'Leben', tileLifeDesc:'Verbesserungen & Codes',
+      btnLoad:'Laden', btnSave:'Speichern / Teilen', btnMail:'E-Mail Backup',
+      back:'← Zurück', sortBtn:'↑↓ A–Z', transBtn:'🌍 Übersetzen', selectBtn:'☑ Auswählen',
+      printBtn:'🖨 Drucken', saveBtn:'📤 Speichern', mailBtn:'📧 Mail', lockBadge:'🔒 Gesperrt',
+      colCondition:'Erkrankung', colImprovement:'Verbesserung', colCode:'Code',
+      addRow:'+ Zeile hinzufügen', add5:'+ 5 Zeilen',
+      selCount:'ausgewählt', selPrint:'🖨 Auswahl drucken', selSave:'📤 Auswahl speichern', selCancel:'✕ Abbrechen',
+      mailTitle:"📧 Email", mailCancel:'Abbrechen', mailCopy:'📋 Daten kopieren',
+      transTitle:'🌍 Übersetzen', transDesc:'Alle Einträge und Schaltflächen werden in die gewählte Sprache übersetzt.',
+      transCancel:'Abbrechen', transGo:'🌍 Jetzt übersetzen',
+      lockTitle:'🔒 Sperren', lockDesc:'Legen Sie eine 4-stellige PIN fest.',
+      lockCancel:'Abbrechen', lockBtn:'🔒 Sperren',
+      unlockTitle:'🔓 Entsperren', unlockDesc:'PIN eingeben zum Entsperren.',
+      unlockBtn:'🔓 Entsperren', pinError:'Falsche PIN', pinError4:'4 Ziffern eingeben',
+      toastSorted:'✓ Alphabetisch sortiert', toastLocked:'🔒 Gesperrt', toastUnlocked:'🔓 Entsperrt',
+      toastCopied:'✓ Kopiert! Gmail öffnen und einfügen.', toastTranslated:'✓ Übersetzt',
+    },
+    fr: {
+      subtitle:'Registre Personnel', tileMedical:'Médical', tileMedicalDesc:'Affections & codes',
+      tileLife:'Vie', tileLifeDesc:'Améliorations & codes',
+      btnLoad:'Charger', btnSave:'Enregistrer / Partager', btnMail:'Sauv. e-mail',
+      back:'← Retour', sortBtn:'↑↓ A–Z', transBtn:'🌍 Traduire', selectBtn:'☑ Sélection',
+      printBtn:'🖨 Imprimer', saveBtn:'📤 Enregistrer', mailBtn:'📧 Mail', lockBadge:'🔒 Verrouillé',
+      colCondition:'Affection', colImprovement:'Amélioration', colCode:'Code',
+      addRow:'+ Ajouter ligne', add5:'+ 5 lignes',
+      selCount:'sélectionné(s)', selPrint:'🖨 Imprimer sélection', selSave:'📤 Enregistrer sélection', selCancel:'✕ Annuler',
+      mailTitle:"📧 Email", mailCancel:'Annuler', mailCopy:'📋 Copier les données',
+      transTitle:'🌍 Traduire', transDesc:'Toutes les entrées et les boutons seront traduits dans la langue choisie.',
+      transCancel:'Annuler', transGo:'🌍 Traduire maintenant',
+      lockTitle:'🔒 Verrouiller', lockDesc:'Définissez un code PIN à 4 chiffres.',
+      lockCancel:'Annuler', lockBtn:'🔒 Verrouiller',
+      unlockTitle:'🔓 Déverrouiller', unlockDesc:'Entrez le PIN pour déverrouiller.',
+      unlockBtn:'🔓 Déverrouiller', pinError:'PIN incorrect', pinError4:'Entrez 4 chiffres',
+      toastSorted:'✓ Trié A–Z', toastLocked:'🔒 Verrouillé', toastUnlocked:'🔓 Déverrouillé',
+      toastCopied:'✓ Copié! Ouvrez Gmail et collez.', toastTranslated:'✓ Traduit',
+    },
+    es: {
+      subtitle:'Registro Personal', tileMedical:'Médico', tileMedicalDesc:'Afecciones & códigos',
+      tileLife:'Vida', tileLifeDesc:'Mejoras & códigos',
+      btnLoad:'Cargar', btnSave:'Guardar / Compartir', btnMail:'Copia e-mail',
+      back:'← Volver', sortBtn:'↑↓ A–Z', transBtn:'🌍 Traducir', selectBtn:'☑ Seleccionar',
+      printBtn:'🖨 Imprimir', saveBtn:'📤 Guardar', mailBtn:'📧 Mail', lockBadge:'🔒 Bloqueado',
+      colCondition:'Afección', colImprovement:'Mejora', colCode:'Código',
+      addRow:'+ Añadir fila', add5:'+ 5 filas',
+      selCount:'seleccionado(s)', selPrint:'🖨 Imprimir selección', selSave:'📤 Guardar selección', selCancel:'✕ Cancelar',
+      mailTitle:"📧 Email", mailCancel:'Cancelar', mailCopy:'📋 Copiar datos',
+      transTitle:'🌍 Traducir', transDesc:'Todas las entradas y botones se traducirán al idioma elegido.',
+      transCancel:'Cancelar', transGo:'🌍 Traducir ahora',
+      lockTitle:'🔒 Bloquear', lockDesc:'Establezca un PIN de 4 dígitos.',
+      lockCancel:'Cancelar', lockBtn:'🔒 Bloquear',
+      unlockTitle:'🔓 Desbloquear', unlockDesc:'Ingrese el PIN para desbloquear.',
+      unlockBtn:'🔓 Desbloquear', pinError:'PIN incorrecto', pinError4:'Ingrese 4 dígitos',
+      toastSorted:'✓ Ordenado A–Z', toastLocked:'🔒 Bloqueado', toastUnlocked:'🔓 Desbloqueado',
+      toastCopied:'✓ Copiado! Abra Gmail y pegue.', toastTranslated:'✓ Traducido',
+    },
+    it: {
+      subtitle:'Registro Personale', tileMedical:'Medico', tileMedicalDesc:'Condizioni & codici',
+      tileLife:'Vita', tileLifeDesc:'Miglioramenti & codici',
+      btnLoad:'Carica', btnSave:'Salva / Condividi', btnMail:'Backup email',
+      back:'← Indietro', sortBtn:'↑↓ A–Z', transBtn:'🌍 Traduci', selectBtn:'☑ Seleziona',
+      printBtn:'🖨 Stampa', saveBtn:'📤 Salva', mailBtn:'📧 Mail', lockBadge:'🔒 Bloccato',
+      colCondition:'Condizione', colImprovement:'Miglioramento', colCode:'Codice',
+      addRow:'+ Aggiungi riga', add5:'+ 5 righe',
+      selCount:'selezionato/i', selPrint:'🖨 Stampa selezione', selSave:'📤 Salva selezione', selCancel:'✕ Annulla',
+      mailTitle:"📧 Email", mailCancel:'Annulla', mailCopy:'📋 Copia dati',
+      transTitle:'🌍 Traduci', transDesc:'Tutte le voci e i pulsanti verranno tradotti nella lingua scelta.',
+      transCancel:'Annulla', transGo:'🌍 Traduci ora',
+      lockTitle:'🔒 Blocca', lockDesc:'Imposta un PIN di 4 cifre.',
+      lockCancel:'Annulla', lockBtn:'🔒 Blocca',
+      unlockTitle:'🔓 Sblocca', unlockDesc:'Inserisci il PIN per sbloccare.',
+      unlockBtn:'🔓 Sblocca', pinError:'PIN errato', pinError4:'Inserisci 4 cifre',
+      toastSorted:'✓ Ordinato A–Z', toastLocked:'🔒 Bloccato', toastUnlocked:'🔓 Sbloccato',
+      toastCopied:'✓ Copiato! Apri Gmail e incolla.', toastTranslated:'✓ Tradotto',
+    },
+    pt: { subtitle:'Registro Pessoal', tileMedical:'Médico', tileMedicalDesc:'Condições & códigos', tileLife:'Vida', tileLifeDesc:'Melhorias & códigos', btnLoad:'Carregar', btnSave:'Guardar / Partilhar', btnMail:'Backup email', back:'← Voltar', sortBtn:'↑↓ A–Z', transBtn:'🌍 Traduzir', selectBtn:'☑ Selecionar', printBtn:'🖨 Imprimir', saveBtn:'📤 Guardar', mailBtn:'📧 Mail', lockBadge:'🔒 Bloqueado', colCondition:'Condição', colImprovement:'Melhoria', colCode:'Código', addRow:'+ Adicionar linha', add5:'+ 5 linhas', selCount:'selecionado(s)', selPrint:'🖨 Imprimir seleção', selSave:'📤 Guardar seleção', selCancel:'✕ Cancelar', mailTitle:"📧 Email", mailCancel:'Cancelar', mailCopy:'📋 Copiar dados', transTitle:'🌍 Traduzir', transDesc:'Todas as entradas e botões serão traduzidos.', transCancel:'Cancelar', transGo:'🌍 Traduzir agora', lockTitle:'🔒 Bloquear', lockDesc:'Defina um PIN de 4 dígitos.', lockCancel:'Cancelar', lockBtn:'🔒 Bloquear', unlockTitle:'🔓 Desbloquear', unlockDesc:'Digite o PIN para desbloquear.', unlockBtn:'🔓 Desbloquear', pinError:'PIN incorreto', pinError4:'Digite 4 dígitos', toastSorted:'✓ Ordenado A–Z', toastLocked:'🔒 Bloqueado', toastUnlocked:'🔓 Desbloqueado', toastCopied:'✓ Copiado! Abra Gmail e cole.', toastTranslated:'✓ Traduzido' },
+    pl: { subtitle:'Rejestr Osobisty', tileMedical:'Medyczny', tileMedicalDesc:'Schorzenia & kody', tileLife:'Życie', tileLifeDesc:'Ulepszenia & kody', btnLoad:'Wczytaj', btnSave:'Zapisz / Udostępnij', btnMail:'Kopia e-mail', back:'← Wróć', sortBtn:'↑↓ A–Z', transBtn:'🌍 Przetłumacz', selectBtn:'☑ Zaznacz', printBtn:'🖨 Drukuj', saveBtn:'📤 Zapisz', mailBtn:'📧 Mail', lockBadge:'🔒 Zablokowano', colCondition:'Schorzenie', colImprovement:'Ulepszenie', colCode:'Kod', addRow:'+ Dodaj wiersz', add5:'+ 5 wierszy', selCount:'zaznaczono', selPrint:'🖨 Drukuj zaznaczone', selSave:'📤 Zapisz zaznaczone', selCancel:'✕ Anuluj', mailTitle:"📧 Email", mailCancel:'Anuluj', mailCopy:'📋 Kopiuj dane', transTitle:'🌍 Tłumacz', transDesc:'Wszystkie wpisy i przyciski zostaną przetłumaczone.', transCancel:'Anuluj', transGo:'🌍 Tłumacz teraz', lockTitle:'🔒 Zablokuj', lockDesc:'Ustaw 4-cyfrowy PIN.', lockCancel:'Anuluj', lockBtn:'🔒 Zablokuj', unlockTitle:'🔓 Odblokuj', unlockDesc:'Wprowadź PIN aby odblokować.', unlockBtn:'🔓 Odblokuj', pinError:'Błędny PIN', pinError4:'Wprowadź 4 cyfry', toastSorted:'✓ Posortowano A–Z', toastLocked:'🔒 Zablokowano', toastUnlocked:'🔓 Odblokowano', toastCopied:'✓ Skopiowano! Otwórz Gmail i wklej.', toastTranslated:'✓ Przetłumaczono' },
+    tr: { subtitle:'Kişisel Kayıt', tileMedical:'Tıbbi', tileMedicalDesc:'Rahatsızlıklar & kodlar', tileLife:'Yaşam', tileLifeDesc:'İyileştirmeler & kodlar', btnLoad:'Yükle', btnSave:'Kaydet / Paylaş', btnMail:'E-posta yedek', back:'← Geri', sortBtn:'↑↓ A–Z', transBtn:'🌍 Çevir', selectBtn:'☑ Seç', printBtn:'🖨 Yazdır', saveBtn:'📤 Kaydet', mailBtn:'📧 Mail', lockBadge:'🔒 Kilitli', colCondition:'Rahatsızlık', colImprovement:'İyileştirme', colCode:'Kod', addRow:'+ Satır ekle', add5:'+ 5 satır', selCount:'seçildi', selPrint:'🖨 Seçimi yazdır', selSave:'📤 Seçimi kaydet', selCancel:'✕ İptal', mailTitle:"📧 Email", mailCancel:'İptal', mailCopy:'📋 Verileri kopyala', transTitle:'🌍 Çevir', transDesc:'Tüm girişler ve düğmeler seçilen dile çevrilecek.', transCancel:'İptal', transGo:'🌍 Şimdi çevir', lockTitle:'🔒 Kilitle', lockDesc:'4 haneli PIN belirleyin.', lockCancel:'İptal', lockBtn:'🔒 Kilitle', unlockTitle:'🔓 Kilidi aç', unlockDesc:'Kilidi açmak için PIN girin.', unlockBtn:'🔓 Kilidi aç', pinError:'Yanlış PIN', pinError4:'4 rakam girin', toastSorted:'✓ A–Z sıralandı', toastLocked:'🔒 Kilitlendi', toastUnlocked:'🔓 Kilit açıldı', toastCopied:'✓ Kopyalandı! Gmail aç ve yapıştır.', toastTranslated:'✓ Çevrildi' },
+    ar: { subtitle:'سجل شخصي', tileMedical:'طبي', tileMedicalDesc:'الحالات والرموز', tileLife:'الحياة', tileLifeDesc:'التحسينات والرموز', btnLoad:'تحميل', btnSave:'حفظ / مشاركة', btnMail:'نسخ احتياطي', back:'← رجوع', sortBtn:'↑↓ أ–ي', transBtn:'🌍 ترجمة', selectBtn:'☑ تحديد', printBtn:'🖨 طباعة', saveBtn:'📤 حفظ', mailBtn:'📧 بريد', lockBadge:'🔒 مقفل', colCondition:'الحالة', colImprovement:'التحسين', colCode:'الرمز', addRow:'+ إضافة سطر', add5:'+ 5 سطور', selCount:'محدد', selPrint:'🖨 طباعة التحديد', selSave:'📤 حفظ التحديد', selCancel:'✕ إلغاء', mailTitle:"📧 Email", mailCancel:'إلغاء', mailCopy:'📋 نسخ البيانات', transTitle:'🌍 ترجمة', transDesc:'سيتم ترجمة جميع المدخلات والأزرار إلى اللغة المختارة.', transCancel:'إلغاء', transGo:'🌍 ترجم الآن', lockTitle:'🔒 قفل', lockDesc:'اضبط رمز PIN مكون من 4 أرقام.', lockCancel:'إلغاء', lockBtn:'🔒 قفل', unlockTitle:'🔓 فتح', unlockDesc:'أدخل PIN للفتح.', unlockBtn:'🔓 فتح', pinError:'PIN خاطئ', pinError4:'أدخل 4 أرقام', toastSorted:'✓ مرتب أ–ي', toastLocked:'🔒 مقفل', toastUnlocked:'🔓 مفتوح', toastCopied:'✓ منسوخ! افتح Gmail والصق.', toastTranslated:'✓ مترجم' },
+    zh: { subtitle:'个人记录', tileMedical:'医疗', tileMedicalDesc:'病症与代码', tileLife:'生活', tileLifeDesc:'改进与代码', btnLoad:'加载', btnSave:'保存/分享', btnMail:'邮件备份', back:'← 返回', sortBtn:'↑↓ A–Z', transBtn:'🌍 翻译', selectBtn:'☑ 选择', printBtn:'🖨 打印', saveBtn:'📤 保存', mailBtn:'📧 邮件', lockBadge:'🔒 已锁定', colCondition:'病症', colImprovement:'改进', colCode:'代码', addRow:'+ 添加行', add5:'+ 5行', selCount:'已选', selPrint:'🖨 打印所选', selSave:'📤 保存所选', selCancel:'✕ 取消', mailTitle:"📧 Email", mailCancel:'取消', mailCopy:'📋 复制数据', transTitle:'🌍 翻译', transDesc:'所有条目和按钮将被翻译成所选语言。', transCancel:'取消', transGo:'🌍 立即翻译', lockTitle:'🔒 锁定', lockDesc:'设置4位PIN码。', lockCancel:'取消', lockBtn:'🔒 锁定', unlockTitle:'🔓 解锁', unlockDesc:'输入PIN码解锁。', unlockBtn:'🔓 解锁', pinError:'PIN错误', pinError4:'请输入4位数字', toastSorted:'✓ 已排序', toastLocked:'🔒 已锁定', toastUnlocked:'🔓 已解锁', toastCopied:'✓ 已复制！打开Gmail粘贴。', toastTranslated:'✓ 已翻译' },
+    ja: { subtitle:'個人記録', tileMedical:'医療', tileMedicalDesc:'症状とコード', tileLife:'生活', tileLifeDesc:'改善とコード', btnLoad:'読込', btnSave:'保存/共有', btnMail:'メールバックアップ', back:'← 戻る', sortBtn:'↑↓ A–Z', transBtn:'🌍 翻訳', selectBtn:'☑ 選択', printBtn:'🖨 印刷', saveBtn:'📤 保存', mailBtn:'📧 メール', lockBadge:'🔒 ロック', colCondition:'症状', colImprovement:'改善', colCode:'コード', addRow:'+ 行を追加', add5:'+ 5行', selCount:'選択済', selPrint:'🖨 選択を印刷', selSave:'📤 選択を保存', selCancel:'✕ キャンセル', mailTitle:"📧 Email", mailCancel:'キャンセル', mailCopy:'📋 データをコピー', transTitle:'🌍 翻訳', transDesc:'すべての項目とボタンが選択した言語に翻訳されます。', transCancel:'キャンセル', transGo:'🌍 今すぐ翻訳', lockTitle:'🔒 ロック', lockDesc:'4桁のPINを設定します。', lockCancel:'キャンセル', lockBtn:'🔒 ロック', unlockTitle:'🔓 アンロック', unlockDesc:'PINを入力してアンロック。', unlockBtn:'🔓 アンロック', pinError:'PINが違います', pinError4:'4桁を入力', toastSorted:'✓ A–Z順に並べ替え', toastLocked:'🔒 ロックされました', toastUnlocked:'🔓 アンロックされました', toastCopied:'✓ コピー済！Gmailを開いて貼付。', toastTranslated:'✓ 翻訳済' },
+  };
+
+  function applyUI(lang) {
+    const u = UI[lang] || UI.en;
+    currentLang = lang;
+    setText('h-subtitle', u.subtitle);
+    setText('h-tile-medical', u.tileMedical);
+    setText('h-tile-medical-desc', u.tileMedicalDesc);
+    setText('h-tile-life', u.tileLife);
+    setText('h-tile-life-desc', u.tileLifeDesc);
+    setText('h-btn-load', u.btnLoad);
+    setText('h-btn-save', u.btnSave);
+    setText('h-btn-mail', u.btnMail);
+    setText('t-back', u.back);
+    setText('t-sort', u.sortBtn);
+    setText('t-trans', u.transBtn);
+    setText('t-select', u.selectBtn);
+    setText('t-print', u.printBtn);
+    setText('t-save', u.saveBtn);
+    setText('t-mail', u.mailBtn);
+    setText('lock-badge', u.lockBadge);
+    setText('col-h-code', u.colCode);
+    setText('t-add1', u.addRow);
+    setText('t-add5', u.add5);
+    setText('t-sel-print', u.selPrint);
+    setText('t-sel-save', u.selSave);
+    setText('t-sel-cancel', u.selCancel);
+    setText('mail-title', u.mailTitle);
+    setText('mail-cancel', u.mailCancel);
+    setText('mail-copy', u.mailCopy);
+    setText('trans-title', u.transTitle);
+    setText('trans-desc', u.transDesc);
+    setText('trans-cancel', u.transCancel);
+    setText('trans-go', u.transGo);
+    setText('lock-cancel', u.lockCancel);
+    // update col header for current section
+    updateColHeader();
+    // save lang
+    
+  }
+
+  function setText(id, val) { const el=document.getElementById(id); if(el) el.textContent=val; }
+
+  function updateColHeader() {
+    const u = UI[currentLang] || UI.en;
+    const el = document.getElementById('col-h-left');
+    if (el) el.textContent = currentSection==='medical' ? u.colCondition : u.colImprovement;
+  }
+
+  const storage = {
+    medical: { rows: mkRows(20), pin: null },
+    leven:   { rows: mkRows(20), pin: null }
+  };
+
+  function mkRows(n) { return Array.from({length:n}, ()=>({aandoening:'',code:''})); }
+
+  function loadCache() {
+    try {
+      const d = localStorage.getItem('codeboek_v2');
+      if (d) { const p=JSON.parse(d); if(p.medical) storage.medical=p.medical; if(p.leven) storage.leven=p.leven; }
+      applyUI('en');
+    } catch(e){}
+  }
+  function saveCache() {
+    try { localStorage.setItem('codeboek_v2', JSON.stringify(storage)); } catch(e){}
+  }
+
+  function openSection(sec) {
+    currentSection = sec;
+    isLocked = !!storage[sec].pin;
+    document.getElementById('home').style.display = 'none';
+    document.getElementById('table-screen').style.display = 'flex';
+    const u = UI[currentLang]||UI.en;
+    const title = document.getElementById('screen-title');
+    const colHeaders = document.getElementById('col-headers');
+    if (sec === 'medical') {
+      title.textContent=u.tileMedical; title.className='screen-title title-medical';
+      colHeaders.className='col-headers medical';
+    } else {
+      title.textContent=u.tileLife; title.className='screen-title title-leven';
+      colHeaders.className='col-headers leven';
+    }
+    updateColHeader();
+    updateLockUI();
+    renderRows();
+  }
+
+  function goHome() { captureData(); exitSelectMode(); document.getElementById('table-screen').style.display='none'; document.getElementById('home').style.display='flex'; }
+
+  function updateLockUI() {
+    const u = UI[currentLang]||UI.en;
+    const badge = document.getElementById('lock-badge');
+    const btnLock = document.getElementById('btn-lock');
+    const addBar = document.getElementById('add-row-bar');
+    badge.style.display = isLocked ? 'inline-block' : 'none';
+    badge.textContent = u.lockBadge;
+    btnLock.textContent = isLocked ? '🔓' : '🔒';
+    document.querySelectorAll('.row-aandoening,.row-code').forEach(el => el.disabled = isLocked);
+    document.querySelectorAll('.del-btn').forEach(el => el.style.display = isLocked ? 'none' : '');
+    addBar.style.display = isLocked ? 'none' : 'flex';
+  }
+
+  function captureData() {
+    if (isLocked) return;
+    const items = document.querySelectorAll('#rows-container .row-item');
+    const rows = [];
+    items.forEach(item => { rows.push({ aandoening: item.querySelector('.row-aandoening').value, code: item.querySelector('.row-code').value }); });
+    storage[currentSection].rows = rows;
+    saveCache();
+  }
+
+  function renderRows() {
+    const container = document.getElementById('rows-container');
+    container.innerHTML = '';
+    storage[currentSection].rows.forEach((r, i) => container.appendChild(makeRowEl(r, i)));
+    if (selectMode) container.classList.add('select-mode');
+    updateLockUI();
+  }
+
+  function makeRowEl(r, i) {
+    const div = document.createElement('div');
+    div.className = 'row-item';
+    div.innerHTML = `
+      <div class="row-check"><input type="checkbox" onchange="updateSelCount()"></div>
+      <span class="row-num">${i+1}</span>
+      <input class="row-aandoening" type="text" value="${esc(r.aandoening)}" placeholder="..." autocapitalize="sentences" oninput="capitalizeFirst(this);autosave()" ${isLocked?'disabled':''}>
+      <input class="row-code" type="text" value="${esc(r.code)}" placeholder="Code" oninput="autosave()" ${isLocked?'disabled':''}>
+      <button class="del-btn" onclick="deleteRow(this)" style="${isLocked?'display:none':''}">✕</button>`;
+    return div;
+  }
+
+  function renumber() { document.querySelectorAll('#rows-container .row-num').forEach((el,i) => el.textContent = i+1); }
+  function deleteRow(btn) { if(isLocked)return; btn.closest('.row-item').remove(); renumber(); autosave(); }
+  function addRow() {
+    if(isLocked)return; captureData();
+    const container = document.getElementById('rows-container');
+    const el = makeRowEl({aandoening:'',code:''}, container.children.length);
+    container.appendChild(el); el.querySelector('.row-aandoening').focus(); renumber();
+  }
+  function addRows(n) { for(let i=0;i<n;i++) addRow(); }
+
+  let at;
+  function capitalizeFirst(el) {
+    if (el.value.length === 1) el.value = el.value.toUpperCase();
+    else if (el.value.length > 0) el.value = el.value.charAt(0).toUpperCase() + el.value.slice(1);
+  }
+
+  function autosave() { clearTimeout(at); at=setTimeout(()=>captureData(),400); }
+
+  function sortTable() {
+    captureData();
+    storage[currentSection].rows.sort((a,b)=>{
+      const aa=(a.aandoening||'').trim().toLowerCase(), bb=(b.aandoening||'').trim().toLowerCase();
+      if(!aa&&!bb)return 0; if(!aa)return 1; if(!bb)return -1;
+      return aa.localeCompare(bb);
+    });
+    saveCache(); renderRows();
+    showToast((UI[currentLang]||UI.en).toastSorted);
+  }
+
+  function toggleSelectMode() {
+    selectMode = !selectMode;
+    const container = document.getElementById('rows-container');
+    const bar = document.getElementById('select-bar');
+    if (selectMode) { container.classList.add('select-mode'); bar.classList.add('visible'); updateSelCount(); }
+    else exitSelectMode();
+  }
+  let allSelected = false;
+  function selectAll() {
+    allSelected = !allSelected;
+    document.querySelectorAll('.row-check input').forEach(cb => cb.checked = allSelected);
+    const u = UI[currentLang]||UI.en;
+    document.getElementById('t-sel-all').textContent = allSelected ? '☐ None' : '☑ All';
+    updateSelCount();
+  }
+
+  function exitSelectMode() {
+    selectMode=false;
+    document.getElementById('rows-container').classList.remove('select-mode');
+    document.getElementById('select-bar').classList.remove('visible');
+    document.querySelectorAll('.row-check input').forEach(cb=>cb.checked=false);
+    document.querySelectorAll('.row-item').forEach(r=>r.classList.remove('not-selected'));
+  }
+  function updateSelCount() {
+    const n=document.querySelectorAll('.row-check input:checked').length;
+    const u=UI[currentLang]||UI.en;
+    document.getElementById('sel-count').textContent=`${n} ${u.selCount}`;
+  }
+  function printSelected() {
+    const items=document.querySelectorAll('#rows-container .row-item');
+    items.forEach(item=>item.classList.toggle('not-selected',!item.querySelector('.row-check input').checked));
+    window.print();
+    setTimeout(()=>items.forEach(i=>i.classList.remove('not-selected')),500);
+  }
+  function printAll() { window.print(); }
+  function shareSelected() {
+    const rows=[]; document.querySelectorAll('#rows-container .row-item').forEach(item=>{ if(item.querySelector('.row-check input').checked) rows.push({aandoening:item.querySelector('.row-aandoening').value,code:item.querySelector('.row-code').value}); });
+    if(!rows.length){showToast('Select rows first');return;}
+    const lbl=currentSection==='medical'?'medical':'life';
+    doShare(JSON.stringify({version:1,section:currentSection,appVersion:APP_VERSION,rows},null,2),`manifestation-codebook_${lbl}_selection_${stamp()}.json`);
+  }
+
+  function shareData(ctx) {
+    if(ctx==='section') captureData();
+    const lbl=ctx==='all'?'all':(currentSection==='medical'?'medical':'life');
+    const fname=`manifestation-codebook_${lbl}_${stamp()}.json`;
+    const content=ctx==='all'
+      ?JSON.stringify({version:1,exportDate:new Date().toISOString(),appVersion:APP_VERSION,lang:currentLang,medical:storage.medical,leven:storage.leven},null,2)
+      :JSON.stringify({version:1,section:currentSection,exportDate:new Date().toISOString(),appVersion:APP_VERSION,rows:storage[currentSection].rows},null,2);
+    doShare(content,fname);
+  }
+
+  function doShare(content, fname) {
+    var blob=new Blob([content],{type:'application/octet-stream'});
+    var file=new File([blob],fname,{type:'application/octet-stream'});
+    if(navigator.share&&navigator.canShare&&navigator.canShare({files:[file]})){
+      navigator.share({files:[file],title:fname}).catch(function(e){if(e.name!=='AbortError')fallbackDownload(content,fname);});
+    } else { fallbackDownload(content,fname); }
+  }
+
+  function fallbackDownload(content,fname) {
+    var a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([content],{type:'application/json'})); a.download=fname; a.click();
+  }
+
+  function triggerLoad() { document.getElementById('load-file-input').click(); }
+  function loadFile(ev) {
+    const f=ev.target.files[0]; if(!f)return;
+    const r=new FileReader();
+    r.onload=e=>{
+      try {
+        const d=JSON.parse(e.target.result);
+        if(d.medical) storage.medical=d.medical;
+        if(d.leven)   storage.leven=d.leven;
+        if(d.section&&d.rows) storage[d.section]={rows:d.rows,pin:storage[d.section].pin};
+
+        saveCache(); showToast('✓ Loaded');
+      } catch(err){ showToast('❌ Could not load file'); }
+    };
+    r.readAsText(f); ev.target.value='';
+  }
+
+  function openCopyModal(ctx) { if(ctx==='section') captureData(); copyContext=ctx; document.getElementById('modal-copy').classList.add('open'); }
+  function closeModal(id) { document.getElementById(id).classList.remove('open'); document.getElementById('pin-input').value=''; document.getElementById('pin-error').style.display='none'; }
+
+  function doCopy() {
+    const text=copyContext==='all'?buildText('medical')+'\n\n'+'─'.repeat(40)+'\n\n'+buildText('leven'):buildText(currentSection);
+    if(navigator.clipboard&&navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(()=>{closeModal('modal-copy');showToast((UI[currentLang]||UI.en).toastCopied);}).catch(()=>fallbackCopy(text));
+    } else { fallbackCopy(text); }
+  }
+  function fallbackCopy(text) {
+    const ta=document.createElement('textarea'); ta.value=text; ta.style.cssText='position:fixed;opacity:0;top:0;left:0';
+    document.body.appendChild(ta); ta.focus(); ta.select();
+    try{document.execCommand('copy');closeModal('modal-copy');showToast((UI[currentLang]||UI.en).toastCopied);}catch(e){showToast('❌ Copy failed');}
+    document.body.removeChild(ta);
+  }
+  function buildText(sec) {
+    const rows=storage[sec].rows.filter(r=>r.aandoening||r.code);
+    const header=sec==='medical'?'🏥 MEDICAL':'🌿 LIFE';
+    const col=sec==='medical'?'Condition':'Improvement';
+    const lines=rows.map(r=>(r.aandoening||'')+'		'+(r.code||''));
+    return header+'\n'+'='.repeat(50)+'\n'+col+'		Code'+'\n'+'-'.repeat(50)+'\n'+lines.join('\n');
+  }
+
+  function openTransModal() { document.getElementById('modal-trans').classList.add('open'); document.getElementById('trans-status').textContent=''; }
+
+  async function doTranslate() {
+    const lang = document.getElementById('lang-select').value;
+    const status = document.getElementById('trans-status');
+
+    // Apply UI language immediately
+    applyUI(lang);
+
+    // Translate content terms
+    const terms = storage[currentSection].rows.map(r=>r.aandoening).filter(t=>t.trim());
+    if (!terms.length) { closeModal('modal-trans'); showToast((UI[lang]||UI.en).toastTranslated); return; }
+
+    if (!originalTexts[currentSection]) originalTexts[currentSection] = storage[currentSection].rows.map(r=>r.aandoening);
+
+    const langNames = {en:'English',nl:'Dutch',de:'German',fr:'French',es:'Spanish',it:'Italian',pt:'Portuguese',pl:'Polish',tr:'Turkish',ar:'Arabic',zh:'Chinese',ja:'Japanese'};
+    const targetLang = langNames[lang]||lang;
+    status.textContent = '...';
+
+    try {
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          model:'claude-sonnet-4-20250514',
+          max_tokens:1000,
+          messages:[{role:'user',content:`Translate these health/life terms to ${targetLang}. Return ONLY a JSON array of strings in the same order, no explanation, no markdown:\n${JSON.stringify(terms)}`}]
+        })
+      });
+      const data = await response.json();
+      const raw = data.content[0].text.trim().replace(/```json|```/g,'').trim();
+      const translated = JSON.parse(raw);
+      let ti=0;
+      storage[currentSection].rows.forEach(r=>{ if(r.aandoening.trim()){r.aandoening=translated[ti]||r.aandoening;ti++;} });
+      saveCache(); renderRows();
+      closeModal('modal-trans');
+      showToast((UI[lang]||UI.en).toastTranslated);
+    } catch(e) {
+      status.textContent='Translation failed';
+      // UI still applied even if content fails
+      renderRows();
+      closeModal('modal-trans');
+    }
+  }
+
+  function openLockModal() {
+    const u=UI[currentLang]||UI.en;
+    const pin=document.getElementById('pin-input'); const err=document.getElementById('pin-error');
+    pin.value=''; err.style.display='none';
+    if (isLocked || storage[currentSection].pin) {
+      lockMode='unlock';
+      document.getElementById('lock-modal-title').textContent=u.unlockTitle;
+      document.getElementById('lock-modal-desc').textContent=u.unlockDesc;
+      document.getElementById('btn-do-lock').textContent=u.unlockBtn;
+    } else {
+      lockMode='set';
+      document.getElementById('lock-modal-title').textContent=u.lockTitle;
+      document.getElementById('lock-modal-desc').textContent=u.lockDesc;
+      document.getElementById('btn-do-lock').textContent=u.lockBtn;
+    }
+    document.getElementById('modal-lock').classList.add('open');
+  }
+
+  function doLock() {
+    const u=UI[currentLang]||UI.en;
+    const pin=document.getElementById('pin-input').value;
+    const err=document.getElementById('pin-error');
+    if (lockMode==='set') {
+      if(pin.length!==4){err.textContent=u.pinError4;err.style.display='block';return;}
+      storage[currentSection].pin=pin; isLocked=true;
+      saveCache(); renderRows(); closeModal('modal-lock'); showToast(u.toastLocked);
+    } else {
+      if(pin!==storage[currentSection].pin){err.textContent=u.pinError;err.style.display='block';return;}
+      storage[currentSection].pin=null; isLocked=false;
+      saveCache(); renderRows(); closeModal('modal-lock'); showToast(u.toastUnlocked);
+    }
+  }
+
+  function openHelp() { document.getElementById('modal-help').classList.add('open'); }
+
+  function stamp(){const d=new Date();return`${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;}
+  function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+  let tt;
+  function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),3200);}
+
+  loadCache();
+</script>
+</body>
+</html>
